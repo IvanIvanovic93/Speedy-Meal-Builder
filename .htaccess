@@ -1,0 +1,4 @@
+# Suchmaschinen fernhalten, auch für Icons, Manifest usw. (nur Apache, wird sonst ignoriert)
+<IfModule mod_headers.c>
+  Header set X-Robots-Tag "noindex, nofollow, noarchive, noimageindex"
+</IfModule>
