@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f7f5f0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Speedi Meals">
+<title>Speedi Meal Planer</title>
+<link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{
+  --bg:#f7f5f0; --card:#ffffff; --ink:#1f2328; --muted:#6b6f76; --line:#e6e1d8;
+  --accent:#e8590c; --accent-soft:#fff0e6; --green:#2f9e44; --green-soft:#e9f7ec;
+  --blue:#1c7ed6; --blue-soft:#e7f1fb; --red:#e03131; --red-soft:#fdecec;
+  --amber:#b7791f; --amber-soft:#fff6db;
+  --basis:#f3e9d2; --protein:#fde2e0; --gemuese:#e1f3e3;
+  --cw:min(68vw, 270px); --radius:18px;
+  --shadow:0 6px 20px rgba(60,40,10,.08), 0 1px 3px rgba(60,40,10,.06);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+body{padding-bottom:calc(76px + env(safe-area-inset-bottom))}
+button{font:inherit;color:inherit;cursor:pointer}
+input,textarea,select{font:inherit;color:inherit}
+header.top{position:sticky;top:0;z-index:20;background:rgba(247,245,240,.92);backdrop-filter:blur(8px);padding:12px 16px 8px;border-bottom:1px solid var(--line)}
+header.top h1{margin:0;font-size:19px;letter-spacing:-.01em}
+header.top .sub{font-size:13px;color:var(--muted)}
+main{max-width:640px;margin:0 auto}
+.view{display:none;padding:12px 0 24px}
+.view.active{display:block}
+.pad{padding:0 16px}
+h2{font-size:17px;margin:20px 16px 8px;display:flex;align-items:center;gap:8px}
+h2 .hint{font-weight:400;font-size:12px;color:var(--muted);margin-left:auto}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+
+/* Portionen */
+.portions{display:flex;align-items:center;justify-content:space-between;background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:10px 14px;margin:8px 16px 0}
+.stepper{display:flex;align-items:center;gap:10px}
+.stepper button{width:40px;height:40px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:22px;line-height:1}
+.stepper b{min-width:22px;text-align:center;font-size:20px}
+
+/* Karussell */
+.car{position:relative}
+.track{position:relative;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px calc((100% - var(--cw))/2) 14px;scrollbar-width:none;overscroll-behavior-x:contain}
+.track::-webkit-scrollbar{display:none}
+.card{flex:0 0 var(--cw);scroll-snap-align:center;scroll-snap-stop:always}
+.card .in{background:var(--card);border-radius:22px;box-shadow:var(--shadow);padding:14px 14px 12px;transition:transform .15s ease, opacity .15s ease, box-shadow .2s;transform-origin:center;border:2px solid transparent;min-height:206px;display:flex;flex-direction:column}
+.card.center .in{border-color:var(--accent)}
+.card.added .in{border-color:var(--green)}
+.card .pic{height:74px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:46px;margin-bottom:8px}
+.k-basis .pic{background:var(--basis)} .k-protein .pic{background:var(--protein)} .k-gemuese .pic{background:var(--gemuese)}
+.card .nm{font-weight:650;font-size:16px;line-height:1.2}
+.card .meta{font-size:13px;color:var(--muted);margin-top:4px}
+.card .badges{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.card .act{margin-top:auto;padding-top:8px}
+.card .act button{width:100%;border-radius:12px;border:1px solid var(--green);background:#fff;color:var(--green);padding:8px;font-weight:600}
+.card.added .act button{background:var(--green);color:#fff}
+.dots{display:flex;justify-content:center;gap:5px;margin-top:-4px}
+.dots i{width:6px;height:6px;border-radius:50%;background:#d6d0c4;transition:all .2s}
+.dots i.on{width:16px;border-radius:3px;background:var(--accent)}
+.arrow{position:absolute;top:92px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line);background:#fff;box-shadow:var(--shadow);display:none;z-index:2}
+.arrow.l{left:6px}.arrow.r{right:6px}
+@media (hover:hover) and (pointer:fine){.arrow{display:block}}
+
+.badge{display:inline-block;font-size:11px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}
+.b-start{background:var(--amber-soft);color:var(--amber)}
+.b-val{background:var(--green-soft);color:var(--green)}
+.b-fein{background:var(--blue-soft);color:var(--blue)}
+.b-warn{background:var(--red-soft);color:var(--red)}
+
+/* Gemüse-Auswahl */
+.vegsel{margin:4px 16px 0;display:flex;flex-direction:column;gap:8px}
+.vegrow{background:var(--card);border-radius:14px;box-shadow:var(--shadow);padding:10px 12px;display:flex;align-items:center;gap:10px}
+.vegrow .nm{flex:1;font-weight:600}
+.vegrow .x{border:none;background:none;font-size:20px;color:var(--muted);padding:0 4px}
+.checks{display:flex;gap:6px}
+.chk{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:10px;padding:6px 8px;font-size:13px;font-weight:600;background:#fff;user-select:none}
+.chk .box{width:18px;height:18px;border-radius:5px;border:2px solid #c8c1b3;display:flex;align-items:center;justify-content:center;font-size:12px;color:#fff}
+.chk.on{border-color:var(--accent);background:var(--accent-soft)}
+.chk.on .box{background:var(--accent);border-color:var(--accent)}
+.empty{margin:4px 16px;padding:10px 12px;border:1.5px dashed var(--line);border-radius:14px;color:var(--muted);font-size:14px}
+
+/* Plan */
+.panel{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:10px 16px;padding:14px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center}
+.kpi{background:var(--bg);border-radius:12px;padding:8px 4px}
+.kpi b{display:block;font-size:20px;letter-spacing:-.02em}
+.kpi span{font-size:11px;color:var(--muted)}
+.prog{margin-top:10px;font-size:13px;color:var(--muted);text-align:center}
+.prog b{color:var(--ink)}
+.pot{border-radius:16px;overflow:hidden;border:1px solid var(--line)}
+.layer{padding:10px 12px;border-bottom:1px solid var(--line)}
+.layer:last-child{border-bottom:none}
+.layer .lt{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:6px}
+.l-oben{background:#fffaf4}
+.l-unten{background:linear-gradient(#fff, #eaf3fb)}
+.item{display:flex;gap:10px;align-items:flex-start;padding:6px 0}
+.item + .item{border-top:1px dashed var(--line)}
+.item .em{font-size:26px;width:34px;text-align:center}
+.item .tx{flex:1;min-width:0}
+.item .tx b{font-weight:650}
+.item .tx .d{font-size:13px;color:var(--muted)}
+.item .when{font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap;text-align:right}
+.foil{border:1.5px dashed #9aa4ae;border-radius:10px;padding:2px 8px;margin:4px 0;background:repeating-linear-gradient(135deg,#f6f7f8,#f6f7f8 6px,#eef0f2 6px,#eef0f2 12px)}
+.steps{margin:0;padding-left:22px}
+.steps li{margin:6px 0}
+.steps li.ev{font-weight:600}
+.warn{background:var(--red-soft);color:#9b1c1c;border-radius:12px;padding:8px 10px;font-size:14px;margin-top:8px}
+.info{background:var(--blue-soft);color:#174a7c;border-radius:12px;padding:8px 10px;font-size:14px;margin-top:8px}
+.btns{display:flex;gap:8px;margin:12px 16px}
+.btn{flex:1;border:none;border-radius:14px;padding:13px 12px;font-weight:650;background:var(--accent);color:#fff;box-shadow:var(--shadow)}
+.btn.sec{background:#fff;color:var(--ink);border:1px solid var(--line)}
+.btn.ghost{background:transparent;box-shadow:none;border:1px solid var(--line);color:var(--ink)}
+.btn.small{flex:0 0 auto;padding:8px 12px;font-size:14px}
+.btn.danger{background:#fff;color:var(--red);border:1px solid #f3c4c4}
+.prot{display:flex;justify-content:space-between;align-items:baseline}
+.prot b{font-size:22px}
+
+/* Timer */
+.ring{position:relative;width:250px;height:250px;margin:10px auto}
+.ring svg{transform:rotate(-90deg)}
+.ring .c{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.ring .c b{font-size:52px;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.ring .c span{font-size:13px;color:var(--muted)}
+.evlist{list-style:none;margin:0;padding:0}
+.evlist li{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)}
+.evlist li:last-child{border-bottom:none}
+.evlist .t{font-variant-numeric:tabular-nums;font-weight:700;width:58px}
+.evlist li.done{color:var(--muted);text-decoration:line-through}
+.evlist li.next{color:var(--accent)}
+
+/* Verlauf */
+.hist{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:10px 16px;padding:12px 14px}
+.hist .hd{display:flex;justify-content:space-between;gap:8px;font-size:13px;color:var(--muted)}
+.hist .tt{font-weight:650;margin:2px 0 6px}
+.rt{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;margin:2px 4px 2px 0}
+.r-roh{background:var(--blue-soft);color:var(--blue)} .r-perfekt{background:var(--green-soft);color:var(--green)}
+.r-durch{background:var(--amber-soft);color:var(--amber)} .r-verbrannt{background:var(--red-soft);color:var(--red)}
+.hist .note{font-size:14px;margin-top:6px;white-space:pre-wrap}
+.hist .chg{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* Zutaten */
+.ing{display:flex;align-items:center;gap:10px;background:var(--card);border-radius:14px;box-shadow:var(--shadow);margin:8px 16px;padding:10px 12px;border:none;width:calc(100% - 32px);text-align:left}
+.ing .em{font-size:26px}
+.ing .tx{flex:1}
+.ing .tx .d{font-size:13px;color:var(--muted)}
+
+/* Sheet */
+.sheet-bg{position:fixed;inset:0;background:rgba(30,25,15,.35);z-index:50;display:none}
+.sheet-bg.open{display:block}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;max-height:92vh;overflow:auto;background:var(--bg);border-radius:22px 22px 0 0;padding:8px 0 calc(20px + env(safe-area-inset-bottom));transform:translateY(105%);transition:transform .25s ease;max-width:640px;margin:0 auto}
+.sheet.open{transform:none}
+.sheet .grab{width:44px;height:5px;border-radius:3px;background:#d6d0c4;margin:4px auto 6px}
+.sheet h3{margin:6px 16px 4px;font-size:18px}
+.field{margin:10px 16px}
+.field label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+.field input[type=text],.field input[type=number],.field textarea,.field select{width:100%;border:1px solid var(--line);border-radius:12px;padding:10px;background:#fff}
+.field textarea{min-height:70px}
+.row2{display:flex;gap:8px}.row2 > *{flex:1}
+.vrow{display:flex;align-items:center;gap:6px;font-size:14px;margin:4px 0}
+.rate{background:var(--card);border-radius:16px;box-shadow:var(--shadow);margin:10px 16px;padding:12px}
+.rate .hd{display:flex;align-items:center;gap:8px;font-weight:650}
+.rate .opts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+.rate .opts button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:9px 2px;font-size:13px;font-weight:600}
+.rate .opts button.on.roh{background:var(--blue);color:#fff;border-color:var(--blue)}
+.rate .opts button.on.perfekt{background:var(--green);color:#fff;border-color:var(--green)}
+.rate .opts button.on.durch{background:var(--amber);color:#fff;border-color:var(--amber)}
+.rate .opts button.on.verbrannt{background:var(--red);color:#fff;border-color:var(--red)}
+.rate input{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:10px;padding:8px;font-size:14px}
+
+/* Alarm */
+.alarm{position:fixed;inset:0;z-index:80;background:rgba(232,89,12,.96);color:#fff;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
+.alarm.open{display:flex;animation:pulse 1s ease-in-out infinite alternate}
+@keyframes pulse{from{background:rgba(232,89,12,.96)}to{background:rgba(214,60,0,.98)}}
+.alarm .big{font-size:56px}
+.alarm h2{display:block;font-size:26px;margin:10px 0}
+.alarm p{font-size:18px;max-width:420px}
+.alarm button{margin-top:20px;border:none;border-radius:16px;background:#fff;color:var(--accent);font-weight:700;font-size:18px;padding:14px 34px}
+
+/* Tabbar */
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;background:rgba(255,255,255,.96);backdrop-filter:blur(8px);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;border:none;background:none;padding:8px 0 9px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:2px}
+nav.tabs button .i{font-size:21px;line-height:1}
+nav.tabs button.on{color:var(--accent);font-weight:700}
+nav.tabs button .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:none;margin-top:-4px}
+nav.tabs button.live .dot{display:block}
+.toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#22252a;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Speedi Meal Planer</h1>
+  <div class="sub">Ninja Speedi ON400EU · Programm Speedi Meals</div>
+</header>
+
+<main>
+  <!-- PLANEN -->
+  <section class="view active" id="v-plan">
+    <div class="portions">
+      <div><b>Portionen</b><div class="small muted">Mengen und Wasser passen sich an</div></div>
+      <div class="stepper"><button id="pMinus" aria-label="weniger">−</button><b id="pVal">2</b><button id="pPlus" aria-label="mehr">+</button></div>
+    </div>
+
+    <h2>🥔 Basis <span class="hint">unten im Topf · wischen ← →</span></h2>
+    <div class="car" id="car-basis"></div>
+
+    <h2>🍗 Protein <span class="hint">oben auf dem Gitter · wischen ← →</span></h2>
+    <div class="car" id="car-protein"></div>
+
+    <h2>🥦 Gemüse <span class="hint">oben · bis zu 3</span></h2>
+    <div class="car" id="car-gemuese"></div>
+    <div class="vegsel" id="vegsel"></div>
+
+    <div id="plan"></div>
+  </section>
+
+  <!-- TIMER -->
+  <section class="view" id="v-timer"><div id="timer"></div></section>
+
+  <!-- VERLAUF -->
+  <section class="view" id="v-hist"><div id="hist"></div></section>
+
+  <!-- ZUTATEN -->
+  <section class="view" id="v-ing"><div id="ings"></div></section>
+
+  <!-- MEHR -->
+  <section class="view" id="v-more"><div id="more"></div></section>
+</main>
+
+<nav class="tabs">
+  <button data-v="plan" class="on"><span class="i">🍽️</span>Planen</button>
+  <button data-v="timer" id="tabTimer"><span class="i">⏱️</span>Timer<span class="dot"></span></button>
+  <button data-v="hist"><span class="i">📒</span>Verlauf</button>
+  <button data-v="ing"><span class="i">🥕</span>Zutaten</button>
+  <button data-v="more"><span class="i">⭐</span>Mehr</button>
+</nav>
+
+<div class="sheet-bg" id="sheetBg"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+
+<div class="alarm" id="alarm">
+  <div class="big" id="alarmIcon">⏰</div>
+  <h2 id="alarmTitle"></h2>
+  <p id="alarmText"></p>
+  <button id="alarmOk">Erledigt</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   Zutatendatenbank (Startwerte)
+   val.* = validiert ja/nein je Wert. Validiert = mindestens
+   einmal mit Ergebnis "perfekt" gekocht.
+   ========================================================= */
+const REF_DATE = '2026-10-26';
+const DEFAULT_DB = [
+  // ---------- BASIS (unten, mit Wasser) ----------
+  {id:'kartoffeln', kat:'basis', name:'Festkochende Kartoffeln', emoji:'🥔', zeit:14, form:'Würfel', groesse:[2,2], menge:250, eiweiss:2,
+   wasserSockel:100, wasserProPortion:100, salzTLProPortion:0.25, hinweis:'Ungeschält oder geschält, gleichmäßig würfeln.',
+   val:{zeit:true, groesse:true, menge:true, wasser:true}, valDatum:REF_DATE},
+  {id:'suesskartoffeln', kat:'basis', name:'Süßkartoffeln', emoji:'🍠', zeit:12, form:'Würfel', groesse:[2.5,2.5], menge:250, eiweiss:1.6,
+   wasserSockel:100, wasserProPortion:75, salzTLProPortion:0.25, hinweis:'Zerfallen schneller als Kartoffeln, nicht kleiner schneiden.', val:{}},
+  {id:'drillinge', kat:'basis', name:'Drillinge, halbiert', emoji:'🥔', zeit:16, form:'halbiert, Ø', groesse:[3,4], menge:250, eiweiss:2,
+   wasserSockel:100, wasserProPortion:100, salzTLProPortion:0.25, hinweis:'Schnittfläche nach unten.', val:{}},
+  {id:'basmati', kat:'basis', name:'Basmatireis', emoji:'🍚', zeit:15, form:'roh', groesse:null, menge:75, eiweiss:7,
+   wasserSockel:50, wasserProPortion:150, salzTLProPortion:0.25, hinweis:'Reis vorher waschen, im Wasser einmal umrühren, damit nichts verklumpt.', val:{}},
+  {id:'vollkornreis', kat:'basis', name:'Vollkornreis', emoji:'🍚', zeit:22, form:'roh', groesse:null, menge:75, eiweiss:7.5,
+   wasserSockel:80, wasserProPortion:170, salzTLProPortion:0.25, hinweis:'Braucht deutlich länger, Protein wird dann fast immer nachgelegt.', val:{}},
+  {id:'nudeln', kat:'basis', name:'Nudeln (Penne/Fusilli)', emoji:'🍝', zeit:12, form:'roh', groesse:null, menge:85, eiweiss:12,
+   wasserSockel:100, wasserProPortion:180, salzTLProPortion:0.25, hinweis:'Sorte mit 9-11 Min Packungskochzeit. Nudeln müssen komplett mit Wasser bedeckt sein.', val:{}},
+  {id:'quinoa', kat:'basis', name:'Quinoa', emoji:'🌾', zeit:12, form:'roh', groesse:null, menge:70, eiweiss:14,
+   wasserSockel:50, wasserProPortion:140, salzTLProPortion:0.25, hinweis:'Gründlich waschen (Bitterstoffe).', val:{}},
+  {id:'bulgur', kat:'basis', name:'Bulgur', emoji:'🌾', zeit:12, form:'roh', groesse:null, menge:70, eiweiss:12,
+   wasserSockel:50, wasserProPortion:140, salzTLProPortion:0.25, hinweis:'', val:{}},
+  {id:'couscous', kat:'basis', name:'Couscous', emoji:'🥣', zeit:10, form:'roh', groesse:null, menge:70, eiweiss:12,
+   wasserSockel:30, wasserProPortion:100, salzTLProPortion:0.25, hinweis:'Gart sehr schnell. Mit langem Protein wird er weich.', val:{}},
+
+  // ---------- PROTEIN (oben, geröstet) ----------
+  {id:'lachs_dick', kat:'protein', name:'Lachsfilet (dick)', emoji:'🐟', zeit:14, form:'Filet, Dicke', groesse:[2.5,3], menge:200, eiweiss:20,
+   wuerze:'Hautseite unten, 1 EL Olivenöl, Paprika, Salz, Pfeffer', hinweis:'',
+   val:{zeit:true, groesse:true, menge:true}, valDatum:REF_DATE},
+  {id:'lachs_duenn', kat:'protein', name:'Lachsfilet (dünn)', emoji:'🐟', zeit:9, form:'Filet, Dicke unter', groesse:[2,2], menge:200, eiweiss:20,
+   wuerze:'Hautseite unten, 1 EL Olivenöl, Paprika, Salz, Pfeffer', hinweis:'Bei 14 Min Gesamtzeit nach 5 Min dazulegen.', val:{}},
+  {id:'kabeljau', kat:'protein', name:'Kabeljaufilet', emoji:'🐠', zeit:10, form:'Filet, Dicke', groesse:[2,3], menge:180, eiweiss:18,
+   wuerze:'1 EL Öl, Zitrone, Salz, Pfeffer', hinweis:'Trockentupfen.', val:{}},
+  {id:'haehnchen', kat:'protein', name:'Hähnchenbrust', emoji:'🍗', zeit:13, form:'Würfel', groesse:[3,3], menge:150, eiweiss:23,
+   wuerze:'1 EL Öl, Paprika, Knoblauch, Salz', hinweis:'Kerntemperatur 74 °C.', val:{}},
+  {id:'haehnchenschenkel', kat:'protein', name:'Hähnchenoberschenkel o. Knochen', emoji:'🍗', zeit:15, form:'ganz, Dicke', groesse:[2,2.5], menge:150, eiweiss:19,
+   wuerze:'1 EL Öl, Gewürzmischung, Salz', hinweis:'Glatte Seite nach oben.', val:{}},
+  {id:'schweinefilet', kat:'protein', name:'Schweinefilet-Medaillons', emoji:'🥩', zeit:12, form:'Medaillons, Dicke', groesse:[3,3], menge:150, eiweiss:21,
+   wuerze:'1 TL Öl, Salz, Pfeffer, Rosmarin', hinweis:'', val:{}},
+  {id:'hackbaellchen', kat:'protein', name:'Hackbällchen', emoji:'🧆', zeit:12, form:'Kugeln, Ø', groesse:[4,4], menge:150, eiweiss:17,
+   wuerze:'', hinweis:'Mit Abstand legen.', val:{}},
+  {id:'bratwurst', kat:'protein', name:'Bratwurst', emoji:'🌭', zeit:12, form:'ganz', groesse:null, menge:150, eiweiss:14,
+   wuerze:'', hinweis:'Mehrfach mit der Gabel einstechen.', val:{}},
+  {id:'garnelen', kat:'protein', name:'Garnelen, roh', emoji:'🦐', zeit:6, form:'geschält', groesse:null, menge:125, eiweiss:18,
+   wuerze:'1 EL Öl, Knoblauch, Chili, Salz', hinweis:'TK-Ware vorher auftauen und trockentupfen.', val:{}},
+  {id:'tofu', kat:'protein', name:'Tofu natur, fest', emoji:'🧈', zeit:13, form:'Würfel', groesse:[2.5,2.5], menge:150, eiweiss:15,
+   wuerze:'1 EL Öl, 1 EL Sojasauce, 1 TL Stärke', hinweis:'Vorher 10 Min pressen.', val:{}},
+  {id:'halloumi', kat:'protein', name:'Halloumi', emoji:'🧀', zeit:8, form:'Scheiben, Dicke', groesse:[1.5,1.5], menge:100, eiweiss:21,
+   wuerze:'', hinweis:'', val:{}},
+  {id:'kichererbsen', kat:'protein', name:'Kichererbsen (Dose)', emoji:'🫘', zeit:14, form:'abgetropft', groesse:null, menge:120, eiweiss:7,
+   wuerze:'1 EL Öl, Paprika, Kreuzkümmel, Salz', hinweis:'Gut trockentupfen, sonst nicht knusprig.', val:{}},
+
+  // ---------- GEMÜSE (oben, geröstet oder Folie) ----------
+  {id:'brokkoli', kat:'gemuese', name:'Brokkoli', emoji:'🥦', zeit:7, fein:true, form:'Röschen', groesse:[4,5], menge:150, eiweiss:3, strat:'folie',
+   folieMax:14, folieWasserEL:2, wuerze:'rundum ölen, Salz',
+   hinweis:'Validiert am 26.10.2026: 14 Min offen auf dem Gitter = verbrannt.', val:{menge:true}, valDatum:REF_DATE},
+  {id:'blumenkohl', kat:'gemuese', name:'Blumenkohl', emoji:'🥬', zeit:9, fein:true, form:'Röschen', groesse:[4,5], menge:150, eiweiss:2, strat:'roesten',
+   folieMax:15, folieWasserEL:2, wuerze:'rundum ölen, Salz, Kurkuma', hinweis:'Röschen verbrennen wie Brokkoli an den Spitzen.', val:{}},
+  {id:'spargel', kat:'gemuese', name:'Grüner Spargel', emoji:'🌱', zeit:6, fein:true, form:'Stangen, Dicke', groesse:[1,1.5], menge:125, eiweiss:2.2, strat:'roesten',
+   folieMax:12, folieWasserEL:1, wuerze:'1 TL Öl, Salz', hinweis:'Holzige Enden abbrechen.', val:{}},
+  {id:'zucchini', kat:'gemuese', name:'Zucchini', emoji:'🥒', zeit:7, fein:true, form:'Halbmonde, Dicke', groesse:[1.5,2], menge:150, eiweiss:1.5, strat:'roesten',
+   folieMax:12, folieWasserEL:1, wuerze:'1 TL Öl, Salz, Kräuter', hinweis:'', val:{}},
+  {id:'paprika', kat:'gemuese', name:'Paprika', emoji:'🫑', zeit:8, fein:true, form:'Streifen, Breite', groesse:[2,3], menge:150, eiweiss:1, strat:'roesten',
+   folieMax:14, folieWasserEL:1, wuerze:'1 TL Öl, Salz', hinweis:'', val:{}},
+  {id:'bohnen', kat:'gemuese', name:'Grüne Bohnen', emoji:'🫛', zeit:8, fein:true, form:'ganz, Enden ab', groesse:null, menge:125, eiweiss:2, strat:'folie',
+   folieMax:15, folieWasserEL:2, wuerze:'Salz, Butterflocke', hinweis:'', val:{}},
+  {id:'tomaten', kat:'gemuese', name:'Kirschtomaten', emoji:'🍅', zeit:6, fein:true, form:'ganz', groesse:null, menge:100, eiweiss:1, strat:'roesten',
+   folieMax:10, folieWasserEL:0, wuerze:'Öl, Salz', hinweis:'', val:{}},
+  {id:'champignons', kat:'gemuese', name:'Champignons', emoji:'🍄', zeit:10, fein:false, form:'halbiert', groesse:null, menge:125, eiweiss:3, strat:'roesten',
+   folieMax:15, folieWasserEL:0, wuerze:'Öl, Salz, Thymian', hinweis:'', val:{}},
+  {id:'karotten', kat:'gemuese', name:'Karotten', emoji:'🥕', zeit:14, fein:false, form:'Scheiben, Dicke', groesse:[1,1], menge:125, eiweiss:0.9, strat:'roesten',
+   folieMax:18, folieWasserEL:2, wuerze:'Öl, Salz, Honig', hinweis:'Robust, darf lange offen liegen.', val:{}},
+  {id:'zwiebel', kat:'gemuese', name:'Rote Zwiebel', emoji:'🧅', zeit:12, fein:false, form:'Spalten', groesse:[2,3], menge:80, eiweiss:1, strat:'roesten',
+   folieMax:18, folieWasserEL:0, wuerze:'Öl, Salz', hinweis:'', val:{}},
+  {id:'kuerbis', kat:'gemuese', name:'Hokkaido-Kürbis', emoji:'🎃', zeit:14, fein:false, form:'Würfel', groesse:[2.5,2.5], menge:150, eiweiss:1, strat:'roesten',
+   folieMax:18, folieWasserEL:2, wuerze:'Öl, Salz, Chili', hinweis:'Schale kann dran bleiben.', val:{}},
+  {id:'rosenkohl', kat:'gemuese', name:'Rosenkohl', emoji:'🥬', zeit:12, fein:false, form:'halbiert', groesse:null, menge:125, eiweiss:3.4, strat:'roesten',
+   folieMax:16, folieWasserEL:2, wuerze:'Öl, Salz', hinweis:'Schnittfläche nach unten.', val:{}},
+];
+
+const KAT = {basis:'Basis', protein:'Protein', gemuese:'Gemüse'};
+const RATINGS = [['roh','zu roh'],['perfekt','perfekt'],['durch','zu durch'],['verbrannt','verbrannt']];
+const LS_KEY = 'speedi-meal-planer-v1';
+const MAX_VEG = 3;
+
+/* ---------------- Zustand ---------------- */
+function seedState(){
+  const db = {}; DEFAULT_DB.forEach(i => db[i.id] = clone(i));
+  return {
+    version:1, db,
+    settings:{temp:200, tempVal:true},
+    sel:{basis:'kartoffeln', protein:'lachs_dick', veg:[{id:'brokkoli', strat:'folie'}], portions:2},
+    favorites:[{id:uid(), name:'Ofenlachs mit Kartoffeln und Brokkoli', sel:{basis:'kartoffeln', protein:'lachs_dick', veg:[{id:'brokkoli', strat:'folie'}], portions:2}}],
+    history:[{
+      id:uid(), date:REF_DATE+'T19:00:00', title:'Ofenlachs mit Kartoffeln und Brokkoli', portions:2, temp:200, T:14, wasser:300,
+      items:[
+        {id:'kartoffeln', name:'Festkochende Kartoffeln', detail:'500 g, Würfel 2 cm, unten, 300 ml Wasser, 1/2 TL Salz', rating:'perfekt'},
+        {id:'lachs_dick', name:'Lachsfilet (dick)', detail:'400 g, 2,5-3 cm, oben, volle 14 Min', rating:'perfekt'},
+        {id:'brokkoli', name:'Brokkoli', detail:'300 g, offen auf dem Gitter, volle 14 Min', rating:'verbrannt'},
+      ],
+      changes:['Brokkoli: künftig gedämpft im Folienpäckchen (14 Min) oder geröstet erst nach 7 Min, Röschen 4-5 cm'],
+      note:'Referenzrezept. Brokkoli verbrannt, nicht essbar. Korrektur: Folienpäckchen mit 1-2 EL Wasser und Salz, oben Luft lassen, klein halten. Oder Röschen 4-5 cm, rundum geölt, erst nach 7 Min aufs Gitter. Dünne Lachsfilets (unter 2 cm) erst nach 5 Min dazulegen.'
+    }],
+    timer:null, pendingRating:null
+  };
+}
+function clone(o){return JSON.parse(JSON.stringify(o))}
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4)}
+function load(){
+  let s = null;
+  try { s = JSON.parse(localStorage.getItem(LS_KEY)); } catch(e) {}
+  if(!s || !s.db) return seedState();
+  // neue Standardzutaten ergänzen, ohne eigene Werte zu überschreiben
+  DEFAULT_DB.forEach(i => { if(!s.db[i.id]) s.db[i.id] = clone(i); });
+  s.settings = s.settings || {temp:200, tempVal:true};
+  s.favorites = s.favorites || []; s.history = s.history || [];
+  return s;
+}
+let S = load();
+function save(){ try { localStorage.setItem(LS_KEY, JSON.stringify(S)); } catch(e) { toast('Speichern fehlgeschlagen'); } }
+
+/* ---------------- Helfer ---------------- */
+const $ = (q, el=document) => el.querySelector(q);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const num = n => String(+(+n).toFixed(1)).replace('.', ',');
+function fmtG(g){
+  if(!g.groesse) return g.form || '';
+  const [a,b] = g.groesse;
+  return `${g.form} ${num(a)}${b!==a ? '-'+num(b) : ''} cm`;
+}
+function fmtTL(x){
+  const q = Math.round(x*4)/4, whole = Math.floor(q), frac = q - whole;
+  const f = {0:'',0.25:'1/4',0.5:'1/2',0.75:'3/4'}[frac];
+  return ((whole ? whole + (f ? ' ' : '') : '') + f || '1/4') + ' TL';
+}
+const mmss = s => { s = Math.max(0, Math.ceil(s)); return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`; };
+const badge = (ok, label) => ok ? `<span class="badge b-val">✓ ${label||'validiert'}</span>` : `<span class="badge b-start">Startwert</span>`;
+const fmtDate = d => new Date(d).toLocaleDateString('de-DE', {day:'2-digit', month:'2-digit', year:'numeric'});
+function toast(t){ const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast._t); toast._t = setTimeout(()=>el.classList.remove('on'), 2400); }
+const ingsOf = kat => Object.values(S.db).filter(i => i.kat === kat);
+
+/* =========================================================
+   Planlogik
+   ========================================================= */
+function computePlan(sel){
+  const n = sel.portions, warnings = [], infos = [];
+  const base = S.db[sel.basis], prot = S.db[sel.protein];
+  if(!base || !prot) return null;
+  const vegs = sel.veg.filter(v => S.db[v.id]).map(v => ({ing:S.db[v.id], strat:v.strat}));
+
+  // Gesamtzeit = längste Garzeit. Feines Gemüse geröstet zählt mit +2 Min,
+  // damit es nie die volle Zeit offen liegt (mind. 2 Min später auflegen).
+  const cand = [base.zeit, prot.zeit];
+  vegs.forEach(v => { if(v.strat === 'roesten') cand.push(v.ing.fein ? v.ing.zeit + 2 : v.ing.zeit); });
+  const T = Math.max(...cand);
+
+  const comps = [];
+  comps.push({role:'basis', ing:base, place:'unten', start:0, dauer:T, menge:base.menge*n});
+  comps.push({role:'protein', ing:prot, place:'oben', start:T - prot.zeit, dauer:prot.zeit, menge:prot.menge*n});
+  vegs.forEach(v => {
+    if(v.strat === 'roesten'){
+      comps.push({role:'gemuese', strat:'roesten', ing:v.ing, place:'oben', start:Math.max(0, T - v.ing.zeit), dauer:Math.min(T, v.ing.zeit), menge:v.ing.menge*n});
+    } else {
+      const start = Math.max(0, T - v.ing.folieMax);
+      comps.push({role:'gemuese', strat:'folie', ing:v.ing, place:'folie', start, dauer:T - start, menge:v.ing.menge*n});
+    }
+  });
+
+  if(T - base.zeit >= 3) warnings.push(`${base.name} gart ${T - base.zeit} Min länger als ideal (${base.zeit} Min), weil eine andere Komponente die Gesamtzeit bestimmt. Wird weicher. Besser: Protein/Gemüse kleiner schneiden oder andere Basis.`);
+  comps.filter(c => c.role==='gemuese' && c.strat==='roesten' && c.ing.fein).forEach(c => {
+    if(c.start < 1) warnings.push(`${c.ing.name} ist feines Gemüse und darf nicht die volle Zeit offen liegen.`);
+  });
+  const opens = comps.filter(c => c.place==='oben').length, foils = comps.filter(c => c.place==='folie').length;
+  if(foils >= 2 || (opens + foils >= 4) || (n >= 3 && opens + foils >= 3))
+    warnings.push('Gitter wird voll: alles in einer Lage, Folienpäckchen klein halten, damit das Protein Umluft bekommt. Ggf. Portionen reduzieren.');
+  if(n >= 4) infos.push('4 Portionen: Basis nicht höher als bis zur Hälfte des Topfs füllen.');
+
+  const wasser = Math.round((base.wasserSockel + base.wasserProPortion*n)/10)*10;
+  const salz = fmtTL((base.salzTLProPortion || 0.25) * n);
+
+  // Ereignisse (Nachlegen)
+  const evMap = {};
+  comps.filter(c => c.start > 0).forEach(c => {
+    (evMap[c.start] = evMap[c.start] || []).push(c);
+  });
+  const events = Object.keys(evMap).map(Number).sort((a,b)=>a-b).map(at => ({
+    at, comps:evMap[at],
+    text: evMap[at].map(c => c.place==='folie' ? `${c.ing.name} im Folienpäckchen aufs Gitter` : `${c.ing.name} aufs Gitter legen`).join(', ')
+  }));
+
+  const eiweiss = comps.reduce((s,c) => s + (c.ing.eiweiss||0) * c.ing.menge / 100, 0);
+  const eiweissParts = comps.map(c => ({name:c.ing.name, g:(c.ing.eiweiss||0) * c.ing.menge / 100}));
+
+  return {T, temp:S.settings.temp, n, wasser, salz, comps, events, eiweiss, eiweissParts, warnings, infos, base, prot};
+}
+
+function compDetail(c){
+  const g = c.ing, parts = [`${c.menge} g`];
+  if(g.groesse || g.form) parts.push(fmtG(g));
+  if(c.place === 'folie') parts.push(`Päckchen mit ${g.folieWasserEL ? (g.folieWasserEL===2?'1-2':g.folieWasserEL)+' EL Wasser und ' : ''}Salz, oben Luft lassen, klein halten`);
+  else if(g.wuerze) parts.push(g.wuerze);
+  return parts.join(' · ');
+}
+function compValid(c){
+  const v = c.ing.val || {};
+  if(c.role === 'basis') return v.zeit && v.wasser && (v.groesse || !c.ing.groesse);
+  if(c.place === 'folie') return v.folie && (v.groesse || !c.ing.groesse);
+  return v.zeit && (v.groesse || !c.ing.groesse);
+}
+function planTitle(p){
+  const v = p.comps.filter(c => c.role==='gemuese').map(c => c.ing.name);
+  return `${p.prot.name} mit ${p.base.name}${v.length ? ' und ' + v.join(', ') : ''}`;
+}
+
+/* =========================================================
+   Karussells (wischen)
+   ========================================================= */
+const carousels = {};
+function buildCarousel(kat){
+  const host = $('#car-' + kat);
+  const items = ingsOf(kat);
+  host.innerHTML = `<button class="arrow l" aria-label="zurück">‹</button><div class="track"></div><button class="arrow r" aria-label="weiter">›</button><div class="dots"></div>`;
+  const track = $('.track', host), dots = $('.dots', host);
+  track.innerHTML = items.map(i => cardHTML(i)).join('');
+  dots.innerHTML = items.map(()=>'<i></i>').join('');
+  const cards = [...track.children];
+  const car = {kat, host, track, cards, items, idx:-1};
+  carousels[kat] = car;
+
+  let raf = 0, settle = 0;
+  const onScroll = () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(() => paintCarousel(car));
+    clearTimeout(settle);
+    settle = setTimeout(() => settleCarousel(car), 140);
+  };
+  track.addEventListener('scroll', onScroll, {passive:true});
+  cards.forEach((c, i) => c.addEventListener('click', e => {
+    if(e.target.closest('.act button')) return;
+    if(i !== car.idx) scrollToIdx(car, i, true);
+  }));
+  $('.arrow.l', host).onclick = () => scrollToIdx(car, Math.max(0, car.idx-1), true);
+  $('.arrow.r', host).onclick = () => scrollToIdx(car, Math.min(cards.length-1, car.idx+1), true);
+  if(kat === 'gemuese'){
+    track.addEventListener('click', e => {
+      const b = e.target.closest('.act button'); if(!b) return;
+      toggleVeg(b.dataset.id);
+    });
+  }
+  // Startposition
+  let start = 0;
+  if(kat === 'basis') start = Math.max(0, items.findIndex(i => i.id === S.sel.basis));
+  if(kat === 'protein') start = Math.max(0, items.findIndex(i => i.id === S.sel.protein));
+  if(kat === 'gemuese' && S.sel.veg[0]) start = Math.max(0, items.findIndex(i => i.id === S.sel.veg[0].id));
+  requestAnimationFrame(() => { scrollToIdx(car, start, false); paintCarousel(car); settleCarousel(car); });
+}
+function cardHTML(i){
+  const v = i.val || {};
+  let meta;
+  if(i.kat === 'basis') meta = `${i.zeit} Min · ${i.groesse ? fmtG(i) : i.menge + ' g/Port.'}`;
+  else if(i.kat === 'protein') meta = `${i.zeit} Min · ${fmtG(i)} · ${num(i.eiweiss*i.menge/100)} g Eiweiß/Port.`;
+  else meta = `geröstet ${i.zeit} Min · ${fmtG(i)}`;
+  const tags = [];
+  if(i.kat === 'gemuese' && i.fein) tags.push('<span class="badge b-fein">fein</span>');
+  tags.push(badge(v.zeit || (i.kat==='gemuese' && v.folie)));
+  return `<div class="card k-${i.kat}" data-id="${i.id}"><div class="in">
+    <div class="pic">${i.emoji}</div>
+    <div class="nm">${esc(i.name)}</div>
+    <div class="meta">${esc(meta)}</div>
+    <div class="badges">${tags.join('')}</div>
+    ${i.kat==='gemuese' ? `<div class="act"><button data-id="${i.id}">＋ Hinzufügen</button></div>` : ''}
+  </div></div>`;
+}
+function centerIdx(car){
+  const mid = car.track.scrollLeft + car.track.clientWidth/2;
+  let best = 0, bd = Infinity;
+  car.cards.forEach((c,i) => { const d = Math.abs(c.offsetLeft + c.offsetWidth/2 - mid); if(d < bd){bd = d; best = i;} });
+  return best;
+}
+function scrollToIdx(car, i, smooth){
+  const c = car.cards[i]; if(!c) return;
+  car.track.scrollTo({left: c.offsetLeft + c.offsetWidth/2 - car.track.clientWidth/2, behavior: smooth ? 'smooth' : 'auto'});
+}
+function paintCarousel(car){
+  const mid = car.track.scrollLeft + car.track.clientWidth/2;
+  car.cards.forEach(c => {
+    const d = Math.min(1, Math.abs(c.offsetLeft + c.offsetWidth/2 - mid) / c.offsetWidth);
+    const inn = c.firstElementChild;
+    inn.style.transform = `scale(${1 - d*0.09})`;
+    inn.style.opacity = String(1 - d*0.4);
+  });
+}
+function settleCarousel(car){
+  const i = centerIdx(car);
+  car.cards.forEach((c,k) => c.classList.toggle('center', k === i));
+  [...$('.dots', car.host).children].forEach((d,k) => d.classList.toggle('on', k === i));
+  if(i === car.idx) return;
+  car.idx = i;
+  const id = car.items[i].id;
+  if(car.kat === 'basis' && S.sel.basis !== id){ S.sel.basis = id; save(); renderPlan(); }
+  if(car.kat === 'protein' && S.sel.protein !== id){ S.sel.protein = id; save(); renderPlan(); }
+}
+function markVegCards(){
+  const car = carousels.gemuese; if(!car) return;
+  car.cards.forEach(c => {
+    const on = S.sel.veg.some(v => v.id === c.dataset.id);
+    c.classList.toggle('added', on);
+    $('.act button', c).textContent = on ? '✓ Gewählt' : '＋ Hinzufügen';
+  });
+}
+function toggleVeg(id){
+  const i = S.sel.veg.findIndex(v => v.id === id);
+  if(i >= 0) S.sel.veg.splice(i, 1);
+  else {
+    if(S.sel.veg.length >= MAX_VEG){ toast(`Maximal ${MAX_VEG} Gemüse, sonst ist das Gitter zu voll`); return; }
+    S.sel.veg.push({id, strat: S.db[id].strat || 'roesten'});
+  }
+  save(); renderVegSel(); renderPlan();
+}
+function buildAllCarousels(){ ['basis','protein','gemuese'].forEach(buildCarousel); renderVegSel(); }
+
+/* ---------------- Gemüse: Haken geröstet / gedämpft ---------------- */
+function renderVegSel(){
+  markVegCards();
+  const host = $('#vegsel');
+  if(!S.sel.veg.length){ host.innerHTML = `<div class="empty">Kein Gemüse gewählt. Karte wischen und „Hinzufügen“ tippen.</div>`; return; }
+  host.innerHTML = S.sel.veg.map(v => {
+    const g = S.db[v.id]; if(!g) return '';
+    return `<div class="vegrow" data-id="${v.id}">
+      <span style="font-size:24px">${g.emoji}</span>
+      <div class="nm">${esc(g.name)}${g.fein ? ' <span class="badge b-fein">fein</span>' : ''}</div>
+      <div class="checks">
+        <div class="chk ${v.strat==='roesten'?'on':''}" data-s="roesten" role="checkbox" aria-checked="${v.strat==='roesten'}"><span class="box">${v.strat==='roesten'?'✓':''}</span>geröstet</div>
+        <div class="chk ${v.strat==='folie'?'on':''}" data-s="folie" role="checkbox" aria-checked="${v.strat==='folie'}"><span class="box">${v.strat==='folie'?'✓':''}</span>gedämpft</div>
+      </div>
+      <button class="x" aria-label="entfernen">×</button>
+    </div>`;
+  }).join('');
+}
+$('#vegsel').addEventListener('click', e => {
+  const row = e.target.closest('.vegrow'); if(!row) return;
+  const v = S.sel.veg.find(x => x.id === row.dataset.id);
+  if(e.target.closest('.x')){ toggleVeg(row.dataset.id); return; }
+  const chk = e.target.closest('.chk'); if(!chk || !v) return;
+  v.strat = chk.dataset.s; save(); renderVegSel(); renderPlan();
+});
+
+/* ---------------- Planansicht ---------------- */
+function renderPlan(){
+  $('#pVal').textContent = S.sel.portions;
+  const p = computePlan(S.sel);
+  if(!p){ $('#plan').innerHTML = ''; return; }
+  const top = p.comps.filter(c => c.place==='oben'), foil = p.comps.filter(c => c.place==='folie'), bot = p.comps.filter(c => c.place==='unten');
+  const when = c => c.start > 0 ? `ab Min ${c.start}<br><span class="muted">${c.dauer} Min</span>` : `ab Start<br><span class="muted">${c.dauer} Min</span>`;
+  const itemHTML = c => `<div class="item"><div class="em">${c.ing.emoji}</div><div class="tx">
+      <b>${esc(c.ing.name)}</b> ${compValid(c) ? '<span class="badge b-val">✓</span>' : '<span class="badge b-start">Startwert</span>'}
+      <div class="d">${esc(compDetail(c))}</div></div><div class="when">${when(c)}</div></div>`;
+
+  const steps = [];
+  steps.push(`<b>Unten:</b> ${p.base.menge*p.n} g ${esc(p.base.name)}${p.base.groesse ? ' ('+esc(fmtG(p.base))+')' : ''} in den Topf, <b>${p.wasser} ml Wasser</b>, ${p.salz} Salz.${p.base.hinweis ? ' '+esc(p.base.hinweis) : ''}`);
+  steps.push(`Cook & Crisp Tray in die <b>obere Position</b> einsetzen.`);
+  const atStart = p.comps.filter(c => c.place!=='unten' && c.start === 0);
+  if(atStart.length) steps.push(`<b>Oben auflegen:</b> ${atStart.map(c => esc(c.ing.name) + (c.place==='folie' ? ' (Folienpäckchen)' : '')).join(', ')}.`);
+  steps.push(`Deckel schließen, Schieber auf <b>RAPID COOKER</b>, Programm <b>SPEEDI MEALS</b>, <b>${p.temp} °C</b>, <b>${p.T} Min</b>.`);
+  steps.push(`App-Timer starten, sobald am Gerät der Countdown läuft (nach dem Dampfaufbau).`);
+  p.events.forEach(ev => steps.push(`<li class="ev">Nach ${ev.at} Min (noch ${p.T - ev.at} Min): ${esc(ev.text)}. Zügig arbeiten, Deckel gleich wieder zu.`));
+  steps.push(`Ende: alles herausnehmen, kurz ruhen lassen.`);
+
+  $('#plan').innerHTML = `
+    <h2>📋 Dein Plan</h2>
+    <div class="panel">
+      <div style="font-weight:650;margin-bottom:8px">${esc(planTitle(p))}</div>
+      <div class="kpis">
+        <div class="kpi"><b>${p.temp}°</b><span>Celsius ${S.settings.tempVal ? '' : '⚠'}</span></div>
+        <div class="kpi"><b>${p.T}</b><span>Minuten</span></div>
+        <div class="kpi"><b>${p.wasser}</b><span>ml Wasser</span></div>
+        <div class="kpi"><b>${p.events.length}</b><span>Nachlegen</span></div>
+      </div>
+      <div class="prog">Programm <b>Speedi Meals</b> · ${p.n} ${p.n===1?'Portion':'Portionen'}</div>
+      ${p.warnings.map(w => `<div class="warn">⚠️ ${esc(w)}</div>`).join('')}
+      ${p.infos.map(w => `<div class="info">ℹ️ ${esc(w)}</div>`).join('')}
+    </div>
+
+    <div class="panel">
+      <div class="pot">
+        <div class="layer l-oben"><div class="lt">Oben · Gitter, geröstet</div>
+          ${top.map(itemHTML).join('')}
+          ${foil.length ? `<div class="lt" style="margin-top:8px">Oben · Folienpäckchen, gedämpft</div>` + foil.map(c => `<div class="foil">${itemHTML(c)}</div>`).join('') : ''}
+        </div>
+        <div class="layer l-unten"><div class="lt">Unten · im Wasser, gedämpft/gekocht</div>
+          ${bot.map(c => itemHTML(c).replace('</div></div><div class="when">', ` · ${p.wasser} ml Wasser · ${p.salz} Salz</div></div><div class="when">`)).join('')}
+        </div>
+      </div>
+    </div>
+
+    <div class="panel"><b>Ablauf</b>
+      <ol class="steps">${steps.map(s => s.startsWith('<li') ? s + '</li>' : `<li>${s}</li>`).join('')}</ol>
+    </div>
+
+    <div class="panel">
+      <div class="prot"><span><b>${num(p.eiweiss)} g</b> Eiweiß pro Portion</span><span class="small muted">Richtwert</span></div>
+      <div class="small muted" style="margin-top:4px">${p.eiweissParts.map(x => `${esc(x.name)} ${num(x.g)} g`).join(' · ')}</div>
+    </div>
+
+    <div class="btns">
+      <button class="btn" id="bStart">▶ Timer starten</button>
+    </div>
+    <div class="btns" style="margin-top:0">
+      <button class="btn sec" id="bFav">☆ Als Favorit</button>
+      <button class="btn sec" id="bRate">✎ Bewerten</button>
+    </div>`;
+  $('#bStart').onclick = () => startTimer(p);
+  $('#bFav').onclick = () => saveFavorite(p);
+  $('#bRate').onclick = () => openRating(snapshotPlan(p));
+}
+$('#pMinus').onclick = () => { S.sel.portions = Math.max(1, S.sel.portions-1); save(); renderPlan(); };
+$('#pPlus').onclick = () => { S.sel.portions = Math.min(4, S.sel.portions+1); save(); renderPlan(); };
+
+function snapshotPlan(p){
+  return {
+    title:planTitle(p), portions:p.n, temp:p.temp, T:p.T, wasser:p.wasser, sel:clone(S.sel),
+    comps:p.comps.map(c => ({id:c.ing.id, name:c.ing.name, emoji:c.ing.emoji, role:c.role, strat:c.strat||null, place:c.place, start:c.start, dauer:c.dauer,
+      detail:`${c.menge} g, ${c.place==='unten' ? 'unten' : c.place==='folie' ? 'Folienpäckchen' : 'oben offen'}, ${c.start ? 'ab Min '+c.start+', ' : ''}${c.dauer} Min${c.ing.groesse ? ', '+fmtG(c.ing) : ''}`})),
+    events:p.events.map(e => ({at:e.at, text:e.text}))
+  };
+}
+
+/* =========================================================
+   Timer mit Alarm
+   ========================================================= */
+let audioCtx = null, wakeLock = null, alarmLoop = null, tickInt = null;
+function unlockAudio(){
+  try { audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)(); if(audioCtx.state === 'suspended') audioCtx.resume(); } catch(e) {}
+}
+function beep(pattern){
+  if(!audioCtx) return;
+  let t = audioCtx.currentTime + 0.02;
+  pattern.forEach(([f, d, gap]) => {
+    const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = 'square'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t+0.01); g.gain.exponentialRampToValueAtTime(0.0001, t+d);
+    o.connect(g).connect(audioCtx.destination); o.start(t); o.stop(t+d+0.02); t += d + gap;
+  });
+}
+const SND_EVENT = [[880,.18,.08],[880,.18,.08],[1175,.35,.2]];
+const SND_END = [[1047,.25,.1],[1319,.25,.1],[1568,.5,.25],[1047,.25,.1],[1319,.25,.1],[1568,.5,.1]];
+const SND_PRE = [[660,.12,.1]];
+async function lockScreen(){ try { if('wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen'); } catch(e) {} }
+function unlockScreen(){ try { wakeLock && wakeLock.release(); } catch(e) {} wakeLock = null; }
+
+function startTimer(p){
+  if(S.timer && S.timer.running && !confirm('Es läuft bereits ein Timer. Ersetzen?')) return;
+  unlockAudio();
+  S.timer = {plan:snapshotPlan(p), T:p.T, startedAt:Date.now(), pausedAt:null, pausedTotal:0, fired:[], pre:[], running:true, done:false};
+  save(); lockScreen(); showView('timer'); renderTimer(); ensureTick();
+  toast('Timer läuft. Bildschirm bleibt an.');
+}
+function elapsed(){
+  const t = S.timer; if(!t) return 0;
+  const now = t.pausedAt || Date.now();
+  return (now - t.startedAt - t.pausedTotal) / 1000;
+}
+function ensureTick(){ clearInterval(tickInt); if(S.timer && S.timer.running) tickInt = setInterval(tick, 250); }
+function tick(){
+  const t = S.timer; if(!t || !t.running) return;
+  const e = elapsed();
+  t.plan.events.forEach((ev, i) => {
+    if(!t.pre.includes(i) && e >= ev.at*60 - 30 && e < ev.at*60){ t.pre.push(i); beep(SND_PRE); save(); }
+    if(!t.fired.includes(i) && e >= ev.at*60){ t.fired.push(i); save(); fireAlarm('Jetzt nachlegen', ev.text, '🥦', false); }
+  });
+  if(!t.done && e >= t.T*60){ t.done = true; t.running = false; save(); fireAlarm('Fertig!', 'Programm zu Ende. Herausnehmen und danach bewerten.', '✅', true); unlockScreen(); }
+  if(currentView === 'timer') paintTimer();
+  $('#tabTimer').classList.toggle('live', !!(S.timer && S.timer.running));
+}
+function fireAlarm(title, text, icon, isEnd){
+  $('#alarmTitle').textContent = title; $('#alarmText').textContent = text; $('#alarmIcon').textContent = icon;
+  $('#alarm').classList.add('open');
+  const snd = isEnd ? SND_END : SND_EVENT;
+  let n = 0;
+  const ring = () => { beep(snd); try { navigator.vibrate && navigator.vibrate([400,150,400,150,600]); } catch(e) {} if(++n > 20) stopAlarm(); };
+  clearInterval(alarmLoop); ring(); alarmLoop = setInterval(ring, 3000);
+  $('#alarm').dataset.end = isEnd ? '1' : '';
+}
+function stopAlarm(){ clearInterval(alarmLoop); alarmLoop = null; $('#alarm').classList.remove('open'); try { navigator.vibrate && navigator.vibrate(0); } catch(e) {} }
+$('#alarmOk').onclick = () => {
+  const end = $('#alarm').dataset.end === '1';
+  stopAlarm();
+  if(end && S.timer){ renderTimer(); openRating(S.timer.plan); }
+};
+
+function renderTimer(){
+  const t = S.timer, host = $('#timer');
+  if(!t){
+    host.innerHTML = `<div class="panel" style="text-align:center"><div style="font-size:44px">⏱️</div><b>Kein Timer aktiv</b>
+      <div class="muted small">Unter „Planen“ eine Kombination wählen und „Timer starten“ tippen.</div></div>`;
+    return;
+  }
+  host.innerHTML = `
+    <div class="panel" style="text-align:center">
+      <div style="font-weight:650">${esc(t.plan.title)}</div>
+      <div class="small muted">Speedi Meals · ${t.plan.temp} °C · ${t.T} Min · ${t.plan.wasser} ml Wasser</div>
+      <div class="ring">
+        <svg width="250" height="250" viewBox="0 0 250 250"><circle cx="125" cy="125" r="110" fill="none" stroke="#ece6da" stroke-width="14"/>
+        <circle id="ringFg" cx="125" cy="125" r="110" fill="none" stroke="var(--accent)" stroke-width="14" stroke-linecap="round" stroke-dasharray="691.15" stroke-dashoffset="0"/></svg>
+        <div class="c"><b id="tLeft">--:--</b><span id="tNext"></span></div>
+      </div>
+      <div class="btns" style="margin:0">
+        <button class="btn sec" id="tPause"></button>
+        <button class="btn sec" id="tPlus">+1 Min</button>
+        <button class="btn danger" id="tStop">Stopp</button>
+      </div>
+    </div>
+    <div class="panel"><b>Ablauf</b>
+      <ul class="evlist" id="tEvents"></ul>
+    </div>
+    <div class="btns"><button class="btn" id="tRate">✎ Jetzt bewerten</button></div>
+    <div class="pad small muted">Tipp: Wenn du am Speedi den Deckel öffnest, kann das Gerät pausieren. Dann hier ebenfalls „Pause“ tippen, damit beide synchron bleiben.</div>`;
+  $('#tPause').onclick = () => {
+    if(t.done) return;
+    unlockAudio();
+    if(t.pausedAt){ t.pausedTotal += Date.now() - t.pausedAt; t.pausedAt = null; t.running = true; lockScreen(); }
+    else { t.pausedAt = Date.now(); }
+    save(); paintTimer(); ensureTick();
+  };
+  $('#tPlus').onclick = () => { t.T += 1; if(t.done){ t.done = false; t.running = true; ensureTick(); } save(); paintTimer(); };
+  $('#tStop').onclick = () => { if(!confirm('Timer beenden?')) return; S.timer = null; save(); unlockScreen(); clearInterval(tickInt); $('#tabTimer').classList.remove('live'); renderTimer(); };
+  $('#tRate').onclick = () => openRating(t.plan);
+  paintTimer();
+}
+function paintTimer(){
+  const t = S.timer; if(!t || !$('#tLeft')) return;
+  const e = elapsed(), left = t.T*60 - e;
+  $('#tLeft').textContent = t.done ? '0:00' : mmss(left);
+  $('#ringFg').setAttribute('stroke-dashoffset', String(691.15 * Math.min(1, Math.max(0, e/(t.T*60)))));
+  const next = t.plan.events.find((ev,i) => !t.fired.includes(i));
+  $('#tNext').textContent = t.done ? 'fertig' : t.pausedAt ? 'pausiert' : next ? `nachlegen in ${mmss(next.at*60 - e)}` : 'bis Ende';
+  $('#tPause').textContent = t.pausedAt ? '▶ Weiter' : '⏸ Pause';
+  const rows = [{at:0, text:'Start: Basis unten, Startkomponenten oben'}, ...t.plan.events, {at:t.T, text:'Ende'}];
+  let nextMarked = false;
+  $('#tEvents').innerHTML = rows.map(r => {
+    const done = e >= r.at*60 && !(r.at === 0 && e === 0);
+    let cls = done ? 'done' : '';
+    if(!done && !nextMarked){ cls = 'next'; nextMarked = true; }
+    return `<li class="${cls}"><span class="t">${r.at}:00</span><span>${esc(r.text)}</span></li>`;
+  }).join('');
+}
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && S.timer && S.timer.running){ lockScreen(); tick(); } });
+
+/* =========================================================
+   Bewertung + Anpassung (Feedbackschleife)
+   ========================================================= */
+let rateState = null;
+function openRating(plan){
+  rateState = {plan, ratings:{}, notes:{}, note:''};
+  const body = `
+    <h3>Wie war's?</h3>
+    <div class="pad small muted">${esc(plan.title)} · ${plan.portions} Port. · ${plan.temp} °C · ${plan.T} Min</div>
+    ${plan.comps.map(c => `<div class="rate" data-id="${c.id}">
+      <div class="hd"><span style="font-size:22px">${c.emoji}</span>${esc(c.name)}
+        <span class="small muted" style="font-weight:400;margin-left:auto">${c.place==='folie'?'gedämpft':c.place==='unten'?'unten':'geröstet'}</span></div>
+      <div class="small muted">${esc(c.detail)}</div>
+      <div class="opts">${RATINGS.map(([k,l]) => `<button data-r="${k}" class="${k}">${l}</button>`).join('')}</div>
+      <input placeholder="Notiz (optional)" data-n="${c.id}">
+    </div>`).join('')}
+    <div class="field"><label>Notiz zum Kochvorgang</label><textarea id="rNote" placeholder="z. B. Lachs von Fischhändler X, Kartoffeln Sorte Y"></textarea></div>
+    <div class="btns"><button class="btn ghost" id="rCancel">Abbrechen</button><button class="btn" id="rSave">Speichern & anpassen</button></div>`;
+  openSheet(body);
+  $('#sheetBody').querySelectorAll('.rate').forEach(box => {
+    box.querySelector('.opts').onclick = e => {
+      const b = e.target.closest('button'); if(!b) return;
+      rateState.ratings[box.dataset.id] = b.dataset.r;
+      box.querySelectorAll('.opts button').forEach(x => x.classList.toggle('on', x === b));
+    };
+  });
+  $('#rCancel').onclick = closeSheet;
+  $('#rSave').onclick = () => {
+    const missing = plan.comps.filter(c => !rateState.ratings[c.id]);
+    if(missing.length){ toast('Bitte jede Komponente bewerten'); return; }
+    $('#sheetBody').querySelectorAll('[data-n]').forEach(i => rateState.notes[i.dataset.n] = i.value.trim());
+    const changes = [];
+    plan.comps.forEach(c => {
+      const ch = adjustIngredient(c, rateState.ratings[c.id]);
+      if(ch.length) changes.push(`${c.name}: ${ch.join(', ')}`);
+    });
+    S.history.unshift({
+      id:uid(), date:new Date().toISOString(), title:plan.title, portions:plan.portions, temp:plan.temp, T:plan.T, wasser:plan.wasser, sel:plan.sel,
+      items:plan.comps.map(c => ({id:c.id, name:c.name, detail:c.detail, rating:rateState.ratings[c.id], note:rateState.notes[c.id] || ''})),
+      changes, note:$('#rNote').value.trim()
+    });
+    if(S.timer && S.timer.plan === plan) S.timer = null;
+    // Strategiewechsel aus dem Feedback auch in die aktuelle Auswahl übernehmen
+    S.sel.veg.forEach(v => { const g = S.db[v.id]; if(g && g.stratGewechselt){ v.strat = g.strat; } });
+    Object.values(S.db).forEach(g => delete g.stratGewechselt);
+    save(); closeSheet();
+    buildAllCarousels(); renderPlan(); renderTimer(); renderIngs();
+    showChanges(changes);
+  };
+}
+function showChanges(changes){
+  openSheet(`<h3>Gespeichert</h3>
+    <div class="panel">${changes.length ? '<b>Angepasst für das nächste Mal:</b><ul class="steps">' + changes.map(c => `<li>${esc(c)}</li>`).join('') + '</ul>' : 'Keine Änderungen nötig.'}</div>
+    <div class="btns"><button class="btn" id="cOk">OK</button></div>`);
+  $('#cOk').onclick = () => { closeSheet(); showView('hist'); };
+}
+
+/* Anpassungsregeln je Rolle und Bewertung */
+function adjustIngredient(c, r){
+  const g = S.db[c.id]; if(!g) return [];
+  g.val = g.val || {};
+  const ch = [];
+  const setZeit = d => { const o = g.zeit; g.zeit = Math.max(1, g.zeit + d); if(o !== g.zeit){ g.val.zeit = false; ch.push(`Garzeit ${o} → ${g.zeit} Min`); } };
+  const setGroesse = d => {
+    if(!g.groesse) return;
+    const o = fmtG(g); g.groesse = g.groesse.map(x => Math.max(0.5, +(x + d).toFixed(1)));
+    g.val.groesse = false; ch.push(`Zuschnitt ${o} → ${fmtG(g)}`);
+  };
+  const markValid = keys => { keys.forEach(k => g.val[k] = true); g.valDatum = new Date().toISOString().slice(0,10); ch.push('als validiert markiert'); };
+
+  if(c.role === 'basis'){
+    const laenger = c.dauer > g.zeit; // Basis lief länger als ihre eigene Zeit
+    if(r === 'perfekt') markValid(['zeit','wasser','groesse','menge']);
+    if(r === 'roh'){ setZeit(+2); g.wasserSockel += 30; g.val.wasser = false; ch.push('Wasser +30 ml'); }
+    if(r === 'durch'){
+      if(laenger && g.groesse){ setGroesse(+0.5); ch.push('Ursache war die längere Gesamtzeit, daher größer schneiden'); }
+      else if(laenger){ ch.push(`Hinweis: lief ${c.dauer} statt ${g.zeit} Min, wegen einer längeren Komponente`); }
+      else setZeit(-2);
+    }
+    if(r === 'verbrannt'){ g.wasserSockel += 60; g.val.wasser = false; ch.push('Wasser +60 ml (Boden angebrannt)'); }
+    return ch;
+  }
+  if(c.role === 'protein'){
+    if(r === 'perfekt') markValid(['zeit','groesse','menge']);
+    if(r === 'roh') setZeit(+2);
+    if(r === 'durch') setZeit(-2);
+    if(r === 'verbrannt') setZeit(-3);
+    return ch;
+  }
+  // Gemüse
+  if(c.strat === 'folie'){
+    if(r === 'perfekt') markValid(['folie','groesse','menge']);
+    if(r === 'roh'){ setGroesse(-0.5); const o = g.folieMax; g.folieMax += 2; g.val.folie = false; ch.push(`max. Zeit im Päckchen ${o} → ${g.folieMax} Min`); }
+    if(r === 'durch'){ const o = g.folieMax; g.folieMax = Math.max(4, Math.min(g.folieMax, c.dauer) - 2); g.val.folie = false; ch.push(`max. Zeit im Päckchen ${o} → ${g.folieMax} Min (wird später aufgelegt)`); }
+    if(r === 'verbrannt'){ g.folieWasserEL = (g.folieWasserEL || 0) + 1; g.folieMax = Math.max(4, Math.min(g.folieMax, c.dauer) - 2); g.val.folie = false; ch.push(`mehr Wasser ins Päckchen (${g.folieWasserEL} EL), max. ${g.folieMax} Min`); }
+    return ch;
+  }
+  const step = g.fein ? 1 : 2;
+  if(r === 'perfekt') markValid(['zeit','groesse','menge']);
+  if(r === 'roh') setZeit(+step);
+  if(r === 'durch') setZeit(-step);
+  if(r === 'verbrannt'){
+    setZeit(-(step+1)); setGroesse(+0.5);
+    g.verbranntCount = (g.verbranntCount || 0) + 1;
+    if(g.verbranntCount >= 2 && g.strat !== 'folie'){ g.strat = 'folie'; g.stratGewechselt = true; ch.push('2× verbrannt: Standard ist jetzt gedämpft (Folie)'); }
+  }
+  return ch;
+}
+
+/* =========================================================
+   Verlauf
+   ========================================================= */
+function renderHist(){
+  const host = $('#hist');
+  if(!S.history.length){ host.innerHTML = `<div class="panel muted">Noch keine Kochvorgänge.</div>`; return; }
+  host.innerHTML = `<h2>📒 Verlauf <span class="hint">${S.history.length} Kochvorgänge</span></h2>` + S.history.map(h => `
+    <div class="hist" data-id="${h.id}">
+      <div class="hd"><span>${fmtDate(h.date)}</span><span>${h.portions} Port. · ${h.temp} °C · ${h.T} Min${h.wasser ? ' · '+h.wasser+' ml' : ''}</span></div>
+      <div class="tt">${esc(h.title)}</div>
+      ${h.items.map(i => `<div class="small"><span class="rt r-${i.rating}">${(RATINGS.find(r => r[0]===i.rating)||[])[1]||''}</span>${esc(i.name)} <span class="muted">${esc(i.detail||'')}</span>${i.note ? `<div class="muted" style="margin-left:6px">„${esc(i.note)}“</div>` : ''}</div>`).join('')}
+      ${h.note ? `<div class="note">${esc(h.note)}</div>` : ''}
+      ${h.changes && h.changes.length ? `<div class="chg">↻ ${h.changes.map(esc).join(' · ')}</div>` : ''}
+      <div style="display:flex;gap:8px;margin-top:8px">
+        ${h.sel ? `<button class="btn sec small" data-act="load">Nochmal kochen</button>` : ''}
+        <button class="btn sec small" data-act="note">Notiz</button>
+        <button class="btn danger small" data-act="del">Löschen</button>
+      </div>
+    </div>`).join('');
+}
+$('#hist').addEventListener('click', e => {
+  const b = e.target.closest('button[data-act]'); if(!b) return;
+  const h = S.history.find(x => x.id === b.closest('.hist').dataset.id); if(!h) return;
+  if(b.dataset.act === 'del'){ if(confirm('Eintrag löschen?')){ S.history = S.history.filter(x => x !== h); save(); renderHist(); } }
+  if(b.dataset.act === 'load'){ applySel(h.sel); }
+  if(b.dataset.act === 'note'){
+    openSheet(`<h3>Notiz</h3><div class="field"><textarea id="hNote">${esc(h.note||'')}</textarea></div>
+      <div class="btns"><button class="btn ghost" id="hC">Abbrechen</button><button class="btn" id="hS">Speichern</button></div>`);
+    $('#hC').onclick = closeSheet;
+    $('#hS').onclick = () => { h.note = $('#hNote').value.trim(); save(); closeSheet(); renderHist(); };
+  }
+});
+
+/* =========================================================
+   Favoriten
+   ========================================================= */
+function saveFavorite(p){
+  const name = prompt('Name für den Favoriten:', planTitle(p));
+  if(!name) return;
+  S.favorites.unshift({id:uid(), name:name.trim(), sel:clone(S.sel)});
+  save(); toast('Als Favorit gespeichert'); renderMore();
+}
+function applySel(sel){
+  const ok = sel && S.db[sel.basis] && S.db[sel.protein];
+  if(!ok){ toast('Zutat existiert nicht mehr'); return; }
+  S.sel = clone(sel); S.sel.veg = S.sel.veg.filter(v => S.db[v.id]);
+  save(); showView('plan'); buildAllCarousels(); renderPlan(); window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* =========================================================
+   Zutaten (Werte ansehen/bearbeiten)
+   ========================================================= */
+function renderIngs(){
+  const host = $('#ings');
+  host.innerHTML = ['basis','protein','gemuese'].map(k => `
+    <h2>${KAT[k]} <span class="hint">${ingsOf(k).filter(i => i.val && (i.val.zeit || i.val.folie)).length}/${ingsOf(k).length} validiert</span></h2>
+    ${ingsOf(k).map(i => {
+      const d = [];
+      if(k==='gemuese') d.push(`geröstet ${i.zeit} Min`, `Folie bis ${i.folieMax} Min`); else d.push(`${i.zeit} Min`);
+      if(i.groesse || i.form) d.push(fmtG(i));
+      d.push(`${i.menge} g/Port.`);
+      if(k==='basis') d.push(`Wasser ${i.wasserSockel}+${i.wasserProPortion}/Port.`);
+      return `<button class="ing" data-id="${i.id}"><span class="em">${i.emoji}</span><span class="tx"><b>${esc(i.name)}</b>
+        ${i.fein ? '<span class="badge b-fein">fein</span>' : ''} ${badge(i.val && (i.val.zeit || i.val.folie), i.valDatum ? 'validiert '+fmtDate(i.valDatum) : '')}
+        <div class="d">${esc(d.join(' · '))}</div></span><span class="muted">›</span></button>`;
+    }).join('')}`).join('') + `<div class="btns"><button class="btn sec" id="newIng">＋ Eigene Zutat</button></div>`;
+  $('#newIng').onclick = () => editIng(null);
+}
+$('#ings').addEventListener('click', e => { const b = e.target.closest('.ing'); if(b) editIng(b.dataset.id); });
+
+function editIng(id){
+  const isNew = !id;
+  const g = isNew ? {id:'eigen_'+uid(), kat:'gemuese', name:'', emoji:'🍽️', zeit:10, form:'Stücke', groesse:[3,3], menge:150, eiweiss:2, fein:false, strat:'roesten', folieMax:14, folieWasserEL:1,
+                     wasserSockel:100, wasserProPortion:100, salzTLProPortion:0.25, wuerze:'', hinweis:'', val:{}} : clone(S.db[id]);
+  const v = g.val || {};
+  const vc = (k, l) => `<label class="vrow"><input type="checkbox" data-v="${k}" ${v[k]?'checked':''}> ${l} validiert</label>`;
+  openSheet(`
+    <h3>${isNew ? 'Neue Zutat' : esc(g.emoji+' '+g.name)}</h3>
+    ${g.hinweis ? `<div class="pad small muted">${esc(g.hinweis)}</div>` : ''}
+    <div class="field row2"><div><label>Name</label><input type="text" id="eName" value="${esc(g.name)}"></div>
+      <div style="flex:0 0 70px"><label>Symbol</label><input type="text" id="eEmoji" value="${esc(g.emoji)}"></div></div>
+    ${isNew ? `<div class="field"><label>Kategorie</label><select id="eKat">${Object.entries(KAT).map(([k,l]) => `<option value="${k}">${l}</option>`).join('')}</select></div>` : ''}
+    <div class="field row2"><div><label>Garzeit${g.kat==='gemuese'?' geröstet':''} (Min)</label><input type="number" id="eZeit" value="${g.zeit}" min="1"></div>
+      <div><label>Menge pro Portion (g)</label><input type="number" id="eMenge" value="${g.menge}" min="1"></div></div>
+    <div class="field row2"><div><label>Zuschnitt (Form)</label><input type="text" id="eForm" value="${esc(g.form||'')}"></div>
+      <div style="flex:0 0 70px"><label>von cm</label><input type="number" step="0.5" id="eG1" value="${g.groesse?g.groesse[0]:''}"></div>
+      <div style="flex:0 0 70px"><label>bis cm</label><input type="number" step="0.5" id="eG2" value="${g.groesse?g.groesse[1]:''}"></div></div>
+    <div class="field row2"><div><label>Eiweiß (g/100 g)</label><input type="number" step="0.1" id="eEiw" value="${g.eiweiss||0}"></div>
+      <div class="kb-basis"><label>Wasser Sockel (ml)</label><input type="number" id="eWS" value="${g.wasserSockel||0}"></div>
+      <div class="kb-basis"><label>+ ml pro Portion</label><input type="number" id="eWP" value="${g.wasserProPortion||0}"></div></div>
+    <div class="field row2 kb-gemuese"><div><label>max. Zeit im Folienpäckchen</label><input type="number" id="eFM" value="${g.folieMax||14}"></div>
+      <div><label>Wasser ins Päckchen (EL)</label><input type="number" id="eFW" value="${g.folieWasserEL||0}"></div></div>
+    <div class="field kb-gemuese"><label class="vrow"><input type="checkbox" id="eFein" ${g.fein?'checked':''}> feines Gemüse (liegt nie die volle Zeit offen)</label>
+      <label class="vrow">Standard: <select id="eStrat" style="width:auto;padding:4px 8px"><option value="roesten" ${g.strat==='roesten'?'selected':''}>geröstet</option><option value="folie" ${g.strat==='folie'?'selected':''}>gedämpft (Folie)</option></select></label></div>
+    <div class="field"><label>Würze / Vorbereitung</label><input type="text" id="eWuerze" value="${esc(g.wuerze||'')}"></div>
+    <div class="field"><label>Validierung</label>${vc('zeit','Garzeit')}${vc('groesse','Zuschnitt')}${vc('menge','Menge')}
+      <span class="kb-basis">${vc('wasser','Wasser')}</span><span class="kb-gemuese">${vc('folie','Folienzeit')}</span></div>
+    <div class="btns"><button class="btn ghost" id="eC">Abbrechen</button><button class="btn" id="eS">Speichern</button></div>
+    ${!isNew ? `<div class="btns" style="margin-top:0">${DEFAULT_DB.some(d => d.id===g.id) ? '<button class="btn sec" id="eR">Auf Startwert zurücksetzen</button>' : '<button class="btn danger" id="eD">Löschen</button>'}</div>` : ''}`);
+  const showKat = () => {
+    const k = isNew ? $('#eKat').value : g.kat;
+    document.querySelectorAll('#sheetBody .kb-basis').forEach(el => el.style.display = k==='basis' ? '' : 'none');
+    document.querySelectorAll('#sheetBody .kb-gemuese').forEach(el => el.style.display = k==='gemuese' ? '' : 'none');
+  };
+  if(isNew){ $('#eKat').value = g.kat; $('#eKat').onchange = showKat; }
+  showKat();
+  $('#eC').onclick = closeSheet;
+  $('#eS').onclick = () => {
+    const name = $('#eName').value.trim(); if(!name){ toast('Name fehlt'); return; }
+    g.name = name; g.emoji = $('#eEmoji').value.trim() || '🍽️';
+    if(isNew) g.kat = $('#eKat').value;
+    g.zeit = Math.max(1, +$('#eZeit').value || 1); g.menge = Math.max(1, +$('#eMenge').value || 1);
+    g.form = $('#eForm').value.trim();
+    const a = parseFloat($('#eG1').value), b = parseFloat($('#eG2').value);
+    g.groesse = isNaN(a) ? null : [a, isNaN(b) ? a : b];
+    g.eiweiss = +$('#eEiw').value || 0;
+    g.wasserSockel = +$('#eWS').value || 0; g.wasserProPortion = +$('#eWP').value || 0;
+    g.folieMax = +$('#eFM').value || 14; g.folieWasserEL = +$('#eFW').value || 0;
+    g.fein = $('#eFein').checked; g.strat = $('#eStrat').value;
+    g.wuerze = $('#eWuerze').value.trim();
+    g.val = {}; document.querySelectorAll('#sheetBody [data-v]').forEach(c => { if(c.checked) g.val[c.dataset.v] = true; });
+    S.db[g.id] = g; save(); closeSheet(); buildAllCarousels(); renderPlan(); renderIngs(); toast('Gespeichert');
+  };
+  if($('#eR')) $('#eR').onclick = () => { if(!confirm('Alle gelernten Werte dieser Zutat verwerfen?')) return; S.db[g.id] = clone(DEFAULT_DB.find(d => d.id===g.id)); save(); closeSheet(); buildAllCarousels(); renderPlan(); renderIngs(); };
+  if($('#eD')) $('#eD').onclick = () => {
+    if(S.sel.basis === g.id || S.sel.protein === g.id){ toast('Ist gerade ausgewählt'); return; }
+    if(!confirm('Zutat löschen?')) return;
+    delete S.db[g.id]; S.sel.veg = S.sel.veg.filter(v => v.id !== g.id); save(); closeSheet(); buildAllCarousels(); renderPlan(); renderIngs();
+  };
+}
+
+/* =========================================================
+   Mehr: Favoriten, Einstellungen, Backup
+   ========================================================= */
+function renderMore(){
+  $('#more').innerHTML = `
+    <h2>⭐ Favoriten</h2>
+    ${S.favorites.length ? S.favorites.map(f => {
+      const vegs = f.sel.veg.map(v => S.db[v.id] ? `${S.db[v.id].name} (${v.strat==='folie'?'gedämpft':'geröstet'})` : '').filter(Boolean).join(', ');
+      return `<div class="hist" data-id="${f.id}"><div class="tt">${esc(f.name)}</div>
+        <div class="small muted">${f.sel.portions} Port. · ${esc((S.db[f.sel.basis]||{}).name||'?')} · ${esc((S.db[f.sel.protein]||{}).name||'?')}${vegs ? ' · '+esc(vegs) : ''}</div>
+        <div style="display:flex;gap:8px;margin-top:8px"><button class="btn small" data-f="load">Laden</button><button class="btn danger small" data-f="del">Löschen</button></div></div>`;
+    }).join('') : '<div class="empty">Noch keine Favoriten. Im Plan „Als Favorit“ tippen.</div>'}
+
+    <h2>⚙️ Einstellungen</h2>
+    <div class="panel">
+      <div class="row2" style="align-items:center"><div><b>Temperatur Speedi Meals</b><div class="small muted">Referenz: 200 °C (validiert)</div></div>
+      <div style="flex:0 0 110px"><input type="number" id="sTemp" value="${S.settings.temp}" step="5" style="width:100%;border:1px solid var(--line);border-radius:12px;padding:10px"></div></div>
+      ${S.settings.temp !== 200 ? '<div class="warn">Alle Zeiten wurden bei 200 °C ermittelt. Bei anderer Temperatur gelten sie nur als Startwert.</div>' : ''}
+    </div>
+
+    <h2>💾 Backup</h2>
+    <div class="panel">
+      <div class="small muted">Zutatenwerte, Verlauf, Favoriten und Einstellungen als JSON-Datei.</div>
+      <div class="btns" style="margin:10px 0 0"><button class="btn" id="xExp">⬇ Exportieren</button><button class="btn sec" id="xImp">⬆ Importieren</button></div>
+      <input type="file" id="xFile" accept="application/json,.json" hidden>
+      <div class="btns" style="margin:8px 0 0"><button class="btn danger" id="xReset">Alles zurücksetzen</button></div>
+    </div>
+    <div class="pad small muted" style="margin-top:12px">Legende: <span class="badge b-start">Startwert</span> = noch nicht mit „perfekt“ bestätigt · <span class="badge b-val">✓ validiert</span> = bestätigt · <span class="badge b-fein">fein</span> = liegt nie die volle Zeit offen.</div>`;
+}
+$('#more').addEventListener('click', e => {
+  const b = e.target.closest('button'); if(!b) return;
+  if(b.dataset.f){
+    const f = S.favorites.find(x => x.id === b.closest('.hist').dataset.id); if(!f) return;
+    if(b.dataset.f === 'load') applySel(f.sel);
+    if(b.dataset.f === 'del' && confirm('Favorit löschen?')){ S.favorites = S.favorites.filter(x => x !== f); save(); renderMore(); }
+  }
+  if(b.id === 'xExp') exportData();
+  if(b.id === 'xImp') $('#xFile').click();
+  if(b.id === 'xReset' && confirm('Wirklich alles löschen und auf Startwerte zurücksetzen? Vorher exportieren!')){ S = seedState(); save(); initAll(); toast('Zurückgesetzt'); }
+});
+$('#more').addEventListener('change', e => {
+  if(e.target.id === 'sTemp'){ const t = Math.round(+e.target.value); if(t >= 100 && t <= 260){ S.settings.temp = t; save(); renderMore(); renderPlan(); } else toast('Ungültige Temperatur'); }
+  if(e.target.id === 'xFile'){ const f = e.target.files[0]; if(f) importData(f); e.target.value = ''; }
+});
+function exportData(){
+  const data = {app:'speedi-meal-planer', version:1, exportedAt:new Date().toISOString(), db:S.db, history:S.history, favorites:S.favorites, settings:S.settings, sel:S.sel};
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `speedi-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  toast('Backup exportiert');
+}
+function importData(file){
+  const r = new FileReader();
+  r.onload = () => {
+    try {
+      const d = JSON.parse(r.result);
+      if(!d.db || typeof d.db !== 'object') throw new Error('Kein gültiges Backup');
+      if(!confirm(`Backup vom ${d.exportedAt ? fmtDate(d.exportedAt) : '?'} laden? Aktuelle Daten werden ersetzt.`)) return;
+      S = Object.assign(seedState(), {db:d.db, history:d.history||[], favorites:d.favorites||[], settings:d.settings||{temp:200, tempVal:true}, sel:d.sel||seedState().sel, timer:null});
+      DEFAULT_DB.forEach(i => { if(!S.db[i.id]) S.db[i.id] = clone(i); });
+      if(!S.db[S.sel.basis] || !S.db[S.sel.protein]) S.sel = seedState().sel;
+      save(); initAll(); toast('Backup importiert');
+    } catch(err){ toast('Import fehlgeschlagen: ' + err.message); }
+  };
+  r.readAsText(file);
+}
+
+/* =========================================================
+   Navigation, Sheet, Start
+   ========================================================= */
+let currentView = 'plan';
+function showView(v){
+  currentView = v;
+  document.querySelectorAll('.view').forEach(el => el.classList.toggle('active', el.id === 'v-' + v));
+  document.querySelectorAll('nav.tabs button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  if(v === 'timer') renderTimer();
+  if(v === 'hist') renderHist();
+  if(v === 'ing') renderIngs();
+  if(v === 'more') renderMore();
+  if(v === 'plan') Object.values(carousels).forEach(c => requestAnimationFrame(() => { scrollToIdx(c, Math.max(0, c.idx), false); paintCarousel(c); }));
+}
+document.querySelectorAll('nav.tabs button').forEach(b => b.onclick = () => { showView(b.dataset.v); window.scrollTo({top:0}); });
+function openSheet(html){ $('#sheetBody').innerHTML = html; $('#sheetBg').classList.add('open'); $('#sheet').classList.add('open'); $('#sheet').scrollTop = 0; }
+function closeSheet(){ $('#sheetBg').classList.remove('open'); $('#sheet').classList.remove('open'); }
+$('#sheetBg').onclick = closeSheet;
+
+function initAll(){
+  buildAllCarousels(); renderPlan(); renderHist(); renderIngs(); renderMore(); renderTimer();
+  if(S.timer && S.timer.running){ ensureTick(); $('#tabTimer').classList.add('live'); }
+}
+initAll();
+window.addEventListener('resize', () => Object.values(carousels).forEach(c => { scrollToIdx(c, Math.max(0, c.idx), false); paintCarousel(c); }));
+// Erster Tipp irgendwo entsperrt Audio (für Alarme nach einem Neuladen)
+document.addEventListener('pointerdown', unlockAudio, {once:true});
+
+// Offline-Cache, falls über https gehostet (z. B. GitHub Pages)
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+</script>
+</body>
+</html>
