@@ -1,9 +1,16 @@
 {
-  "name": "Speedi Meal Planer",
-  "short_name": "Speedi Meals",
-  "start_url": "./index.html",
+  "name": "Meal Planer für den Ninja Speedi",
+  "short_name": "Meal Planer",
+  "description": "Garzeiten, Wasser und Schichtplan für das Programm Speedi Meals.",
+  "lang": "de",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#f7f5f0",
   "theme_color": "#f7f5f0",
-  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ]
 }

@@ -5,9 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#f7f5f0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Speedi Meals">
-<title>Speedi Meal Planer</title>
+<meta name="apple-mobile-web-app-title" content="Meal Planer">
+<title>Meal Planer für den Ninja Speedi: Garzeiten, Wasser & Schichtplan</title>
+<meta name="description" content="Kostenloser Planer für das Programm Speedi Meals am Ninja Speedi (ON400EU): Basis, Protein und Gemüse wählen und Temperatur, Garzeit, Wassermenge, Zuschnitt und Nachlege-Zeitpunkte erhalten. Mit Timer, läuft offline.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="__BASE_URL__">
+<meta property="og:type" content="website">
+<meta property="og:locale" content="de_DE">
+<meta property="og:title" content="Meal Planer für den Ninja Speedi">
+<meta property="og:description" content="Basis, Protein und Gemüse wählen, fertigen Schichtplan mit Zeit, Wasser und Nachlege-Zeitpunkten erhalten.">
+<meta property="og:url" content="__BASE_URL__">
+<meta property="og:image" content="__BASE_URL__og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-180.png">
 <link rel="manifest" href="manifest.webmanifest">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebApplication","name":"Meal Planer für den Ninja Speedi","url":"__BASE_URL__","applicationCategory":"LifestyleApplication","operatingSystem":"Alle (Browser)","inLanguage":"de","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},
+  "description":"Planer für das Programm Speedi Meals: berechnet Temperatur, Garzeit, Wassermenge, Zuschnitt und Nachlege-Zeitpunkte für Basis, Protein und Gemüse."},
+ {"@type":"FAQPage","mainEntity":[
+  {"@type":"Question","name":"Warum verbrennt Brokkoli im Speedi?","acceptedAnswer":{"@type":"Answer","text":"Feines Gemüse wie Brokkoli liegt oben direkt in der Umluft. 14 Minuten offen bei 200 °C sind zu viel. Entweder im Alufolienpäckchen mit 1-2 EL Wasser dämpfen oder erst nach 7 Minuten aufs Gitter legen."}},
+  {"@type":"Question","name":"Wie viel Wasser brauchen Kartoffeln im Programm Speedi Meals?","acceptedAnswer":{"@type":"Answer","text":"Für 500 g festkochende Kartoffeln in 2 cm Würfeln: 300 ml Wasser und 1/2 TL Salz, 200 °C, 14 Minuten."}},
+  {"@type":"Question","name":"Werden meine Daten gespeichert?","acceptedAnswer":{"@type":"Answer","text":"Nur lokal in deinem Browser. Es werden keine Daten an einen Server übertragen, es gibt keine Cookies und kein Tracking."}}
+ ]}
+]}
+</script>
 <style>
 :root{
   --bg:#f7f5f0; --card:#ffffff; --ink:#1f2328; --muted:#6b6f76; --line:#e6e1d8;
@@ -186,13 +211,20 @@ nav.tabs button .i{font-size:21px;line-height:1}
 nav.tabs button.on{color:var(--accent);font-weight:700}
 nav.tabs button .dot{width:7px;height:7px;border-radius:50%;background:var(--accent);display:none;margin-top:-4px}
 nav.tabs button.live .dot{display:block}
+.about{margin:28px 16px 0;font-size:15px}
+.about h2{margin:22px 0 6px}
+.about h3{font-size:15px;margin:14px 0 4px}
+.about p{margin:6px 0}
+.legal{display:flex;flex-wrap:wrap;gap:6px 16px;justify-content:center;font-size:13px;margin:22px 16px 6px}
+.legal a{color:var(--muted)}
+.disclaimer{font-size:12px;color:var(--muted);text-align:center;margin:0 16px}
 .toast{position:fixed;left:50%;bottom:calc(90px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#22252a;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
 .toast.on{opacity:1}
 </style>
 </head>
 <body>
 <header class="top">
-  <h1>Speedi Meal Planer</h1>
+  <h1>Meal Planer für den Ninja Speedi</h1>
   <div class="sub">Ninja Speedi ON400EU · Programm Speedi Meals</div>
 </header>
 
@@ -215,6 +247,20 @@ nav.tabs button.live .dot{display:block}
     <div class="vegsel" id="vegsel"></div>
 
     <div id="plan"></div>
+
+    <article class="about">
+      <h2>So funktioniert der Planer</h2>
+      <p>Im Programm <b>Speedi Meals</b> gart der Ninja Speedi zwei Ebenen gleichzeitig: unten im Topf wird die Basis (Kartoffeln, Reis, Nudeln, Quinoa) mit Wasser gedämpft und gekocht, oben auf dem Cook &amp; Crisp Tray werden Protein und Gemüse durch Umluft geröstet. Es gibt nur eine Temperatur und eine Zeit für alles.</p>
+      <p>Der Planer nimmt die Komponente mit der längsten Garzeit als Gesamtzeit. Alles, was schneller gart, wird später nachgelegt oder im Folienpäckchen gedämpft. Feines Gemüse wie Brokkoli, Spargel, Zucchini oder Paprika liegt nie die volle Zeit offen auf dem Gitter.</p>
+      <h3>Geröstet oder gedämpft?</h3>
+      <p><b>Geröstet:</b> Gemüse offen aufs Gitter, aber erst kurz vor Ende, z. B. Brokkoli in 4-5 cm Röschen, rundum geölt, 7 Minuten vor Schluss. <b>Gedämpft:</b> im kleinen Alufolienpäckchen mit 1-2 EL Wasser und Salz, oben etwas Luft lassen. Das Päckchen bleibt die ganze Zeit drin.</p>
+      <h3>Werte lernen mit</h3>
+      <p>Nach dem Kochen bewertest du jede Komponente: zu roh, perfekt, zu durch oder verbrannt. Der Planer passt Garzeit, Zuschnitt, Wasser oder Strategie für diese Zutat an. Werte, die noch nie mit „perfekt“ bestätigt wurden, sind als <i>Startwert</i> markiert.</p>
+      <h3>Deine Daten bleiben bei dir</h3>
+      <p>Alles wird nur lokal in deinem Browser gespeichert. Keine Anmeldung, keine Cookies, kein Tracking. Backups machst du selbst als JSON-Datei unter „Mehr“.</p>
+    </article>
+    <nav class="legal" aria-label="Rechtliches"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></nav>
+    <p class="disclaimer">Unabhängiges Hilfsprogramm, kein Produkt von SharkNinja. Ninja und Speedi sind Marken ihrer jeweiligen Inhaber. Alle Angaben ohne Gewähr, Geflügel und Hack immer vollständig durchgaren (Kerntemperatur mind. 72-74 °C).</p>
   </section>
 
   <!-- TIMER -->
@@ -1069,7 +1115,8 @@ function renderMore(){
       <input type="file" id="xFile" accept="application/json,.json" hidden>
       <div class="btns" style="margin:8px 0 0"><button class="btn danger" id="xReset">Alles zurücksetzen</button></div>
     </div>
-    <div class="pad small muted" style="margin-top:12px">Legende: <span class="badge b-start">Startwert</span> = noch nicht mit „perfekt“ bestätigt · <span class="badge b-val">✓ validiert</span> = bestätigt · <span class="badge b-fein">fein</span> = liegt nie die volle Zeit offen.</div>`;
+    <div class="pad small muted" style="margin-top:12px">Legende: <span class="badge b-start">Startwert</span> = noch nicht mit „perfekt“ bestätigt · <span class="badge b-val">✓ validiert</span> = bestätigt · <span class="badge b-fein">fein</span> = liegt nie die volle Zeit offen.</div>
+    <nav class="legal" aria-label="Rechtliches"><a href="impressum.html">Impressum</a><a href="datenschutz.html">Datenschutz</a></nav>`;
 }
 $('#more').addEventListener('click', e => {
   const b = e.target.closest('button'); if(!b) return;
